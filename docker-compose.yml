@@ -1,0 +1,50 @@
+# Docker Compose for LitterBox v2 Local Testing
+# 
+# Usage:
+#   docker-compose up -d        # Start validator
+#   docker-compose logs -f      # View logs
+#   docker-compose down         # Stop validator
+
+version: '3.8'
+
+services:
+  # Solana Test Validator
+  solana-validator:
+    image: ghcr.io/solana-labs/solana:stable
+    container_name: litterbox-validator
+    ports:
+      - "8899:8899"
+      - "8900:8900"
+    volumes:
+      - ./target/deploy:/programs:ro
+      - ./scripts:/scripts
+    command: >
+      solana-test-validator
+      --reset
+      --bpf-program 8LhTE9owPwbdJMHbE7Nwi9i2H66JsPHzjwWbKPgLUa7t /programs/litterbox_pinocchio.so
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8899"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Test runner (runs after validator starts)
+  test-runner:
+    image: ghcr.io/solana-labs/solana:stable
+    container_name: litterbox-test-runner
+    depends_on:
+      solana-validator:
+        condition: service_healthy
+    volumes:
+      - ./scripts:/scripts
+      - ./target/deploy:/programs
+    command: >
+      bash -c "
+        echo 'Waiting for validator...';
+        sleep 5;
+        echo 'Deploying program...';
+        solana program deploy /programs/litterbox_pinocchio.so --url http://solana-validator:8899;
+        echo 'Airdropping SOL...';
+        solana airdrop 100 --url http://solana-validator:8899;
+        echo 'Setup complete!';
+      "

@@ -1,0 +1,41 @@
+# Surfpool Configuration for LitterBox v2
+# https://github.com/murf-lab/surfpool
+
+# Cluster configuration
+cluster:
+  name: litterbox-local
+  rpc_url: http://localhost:8899
+  ws_url: ws://localhost:8899
+
+# Airdrop configuration
+airdrop:
+  enabled: true
+  amount: 100  # SOL per airdrop
+  min_balance: 10  # Auto-airdrop when below this
+
+# Plugins to enable
+plugins:
+  # Token plugin for SPL tokens
+  - name: token
+    enabled: true
+  
+  # Memo plugin for logging
+  - name: memo
+    enabled: true
+
+# Program deployments
+programs:
+  - name: litterbox_v2
+    program_id: 8LhTE9owPwbdJMHbE7Nwi9i2H66JsPHzjwWbKPgLUa7t
+    binary: target/deploy/litterbox_pinocchio.so
+    deployed: false  # Set to true after first deployment
+
+# Accounts to pre-create (optional)
+accounts:
+  # Config PDA will be created by program
+  # VirtualPool PDA will be created by program
+  
+# Environment variables
+env:
+  ANCHOR_PROVIDER_URL: http://localhost:8899
+  ANCHOR_WALLET: ~/.config/solana/id.json

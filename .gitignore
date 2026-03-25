@@ -1,0 +1,68 @@
+# Rust
+/target/
+**/target/
+*.rs.bk
+Cargo.lock
+
+# SBF builds
+*.so
+*.dwp
+*.o
+
+# Solana
+/id.json
+*.keypair
+*.json
+!.solana/config.yaml
+keypair.json
+**/*.key
+**/*.secret
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node (if using client scripts)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+test-ledger/
+test-ledger-*/
+*.log
+
+# OS
+Thumbs.db
+*.tmp
+*.temp
+
+# Secrets and credentials
+*.pem
+*.key
+secret*
+credential*
+*.secret
+*.private
+
+# Build artifacts
+*.pbxproj
+*.xcodeproj
+*.xcworkspace
+*.xcuserstate
+*.xccheckout
+
+# Backup files
+*.bak
+*.backup
+*.old
