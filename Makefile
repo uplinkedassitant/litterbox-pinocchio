@@ -1,64 +1,28 @@
-.PHONY: build deploy test clean
+.PHONY: build test clean check
 
-# Build for on-chain deployment
+# Build the SBF binary (.so) — this is what gets deployed
 build:
-	cargo build-sbf --sbf-out-dir ./target/deploy
+	cargo build-sbf --features bpf-entrypoint --sbf-out-dir ./target/deploy
 
-# Build for local testing
-build-local:
-	cargo build
-
-# Deploy to cluster
-deploy:
-	solana program deploy target/deploy/litterbox_pinocchio.so
-
-# Deploy to devnet
-deploy-devnet:
-	solana program deploy target/deploy/litterbox_pinocchio.so \
-		--url devnet \
-		--keypair ~/.config/solana/id.json
-
-# Deploy to mainnet-beta
-deploy-mainnet:
-	solana program deploy target/deploy/litterbox_pinocchio.so \
-		--url mainnet-beta \
-		--keypair ~/.config/solana/id.json
-
-# Run tests
+# Run unit tests on the host (no SBF toolchain required)
 test:
 	cargo test
 
-# Run on-chain tests
-test-sbf:
-	cargo test-sbf
+# Type-check without SBF toolchain (fast feedback loop)
+check:
+	cargo check
 
-# Clean build artifacts
+# Type-check the entrypoint feature path too
+check-bpf:
+	cargo check --features bpf-entrypoint --target sbf-solana-solana
+
 clean:
 	cargo clean
-	rm -rf target
 
-# Initialize program (example)
-init-program:
-	# Example: Initialize with threshold=1000 USDC, initial reserves
-	# This would be called via solana invoke or a client script
-	@echo "Use a client script to call initialize instruction"
+# Deploy to surfpool devnet (set PROGRAM_ID env var first)
+deploy:
+	solana program deploy target/deploy/litterbox_pinocchio.so
 
-# Check code format
-fmt:
-	cargo fmt
-
-# Lint
-lint:
-	cargo clippy
-
-# Build release with optimizations
-build-release:
-	cargo build-sbf --sbf-out-dir ./target/deploy --release
-
-# Show program info
-program-info:
-	solana program show 8LhTE9owPwbdJMHbE7Nwi9i2H66JsPHzjwWbKPgLUa7t
-
-# Upgrade program
-upgrade-program:
-	solana program upgrade 8LhTE9owPwbdJMHbE7Nwi9i2H66JsPHzjwWbKPgLUa7t target/deploy/litterbox_pinocchio.so
+# Show the .so size
+size:
+	ls -lh target/deploy/litterbox_pinocchio.so 2>/dev/null || echo "Not built yet"

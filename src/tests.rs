@@ -1,86 +1,86 @@
-//! Tests for LitterBox v2 Pinocchio program
+//! Unit tests — run with `cargo test` (no SBF toolchain needed).
 
-#[cfg(test)]
-mod tests {
-    use crate::*;
+use crate::*;
+use crate::error::LitterError;
+use crate::utils::{calc_litter_out, split_fee};
+use pinocchio::program_error::ProgramError;
 
-    #[test]
-    fn test_config_size() {
-        // Verify Config struct size
-        assert_eq!(Config::LEN, 86);
-    }
+#[test]
+fn test_config_size() {
+    assert_eq!(Config::LEN, 86);
+}
 
-    #[test]
-    fn test_virtual_pool_size() {
-        // Verify VirtualPool struct size
-        assert_eq!(VirtualPool::LEN, 41);
-    }
+#[test]
+fn test_virtual_pool_size() {
+    assert_eq!(VirtualPool::LEN, 41);
+}
 
-    #[test]
-    fn test_initialize_params_size() {
-        // Verify InitializeParams is 24 bytes (3 x u64)
-        assert_eq!(std::mem::size_of::<InitializeParams>(), 24);
-    }
+#[test]
+fn test_initialize_params_size() {
+    assert_eq!(core::mem::size_of::<InitializeParams>(), 24);
+}
 
-    #[test]
-    fn test_error_codes() {
-        // Verify error codes convert correctly
-        let error: ProgramError = LitterError::InvalidAmount.into();
-        assert!(matches!(error, ProgramError::Custom(code) if code == 0));
+#[test]
+fn test_error_codes() {
+    let e: ProgramError = LitterError::InvalidAmount.into();
+    assert!(matches!(e, ProgramError::Custom(0)));
 
-        let error: ProgramError = LitterError::SlippageExceeded.into();
-        assert!(matches!(error, ProgramError::Custom(code) if code == 1));
-    }
+    let e: ProgramError = LitterError::SlippageExceeded.into();
+    assert!(matches!(e, ProgramError::Custom(1)));
+}
 
-    #[test]
-    fn test_constants() {
-        // Verify constants
-        assert_eq!(MIN_DEPOSIT_USDC, 1_000_000);
-        assert_eq!(MIN_SWEEP_USDC, 100_000);
-        assert_eq!(PLATFORM_FEE_BPS, 200);
-        assert_eq!(MODE_VIRTUAL, 0);
-        assert_eq!(MODE_REAL, 1);
-    }
+#[test]
+fn test_constants() {
+    assert_eq!(MIN_DEPOSIT_USDC,   1_000_000);
+    assert_eq!(MIN_SWEEP_USDC,     100_000);
+    assert_eq!(PLATFORM_FEE_BPS,   200);
+    assert_eq!(MODE_VIRTUAL,       0);
+    assert_eq!(MODE_REAL,          1);
+}
 
-    #[test]
-    fn test_bonding_curve_calculation() {
-        // Test bonding curve: litter_out = (virtual_litter * usdc_in) / (virtual_usdc + usdc_in)
-        let virtual_usdc: u128 = 100_000_000; // 100 USDC
-        let virtual_litter: u128 = 1_000_000_000_000; // 1M LITTER
-        let usdc_in: u128 = 10_000_000; // 10 USDC
+#[test]
+fn test_bonding_curve() {
+    // litter_out = (1_000_000_000_000 * 10_000_000) / (100_000_000 + 10_000_000)
+    //            = 10^19 / 110_000_000 = 90_909_090_909
+    let out = calc_litter_out(100_000_000, 1_000_000_000_000, 10_000_000).unwrap();
+    assert_eq!(out, 90_909_090_909);
+}
 
-        let litter_out = (virtual_litter * usdc_in) / (virtual_usdc + usdc_in);
+#[test]
+fn test_fee_split() {
+    let (fee, net) = split_fee(10_000_000).unwrap();
+    assert_eq!(fee, 200_000);
+    assert_eq!(net, 9_800_000);
+}
 
-        // Should receive approximately 90,909,090 LITTER tokens
-        assert_eq!(litter_out, 90909090909);
-    }
+#[test]
+fn test_graduation_threshold() {
+    let threshold:   u64 = 1_000 * 1_000_000;
+    let accumulated: u64 = 1_050 * 1_000_000;
+    assert!(accumulated >= threshold);
+}
 
-    #[test]
-    fn test_fee_calculation() {
-        // Test 2% fee
-        let amount = 10_000_000; // 10 USDC
-        let fee = amount.wrapping_mul(2).wrapping_div(100);
-        let after_fee = amount.wrapping_sub(fee);
+#[test]
+fn test_pda_seeds() {
+    assert_eq!(CONFIG_SEED,       b"config");
+    assert_eq!(VIRTUAL_POOL_SEED, b"virtual_pool");
+    assert_eq!(USDC_VAULT_SEED,   b"usdc_vault");
+    assert_eq!(LITTER_VAULT_SEED, b"litter_vault");
+}
 
-        assert_eq!(fee, 200_000); // 0.2 USDC fee
-        assert_eq!(after_fee, 9_800_000); // 9.8 USDC after fee
-    }
+#[test]
+fn test_config_zeroed() {
+    // bytemuck::Zeroable lets us create a zero-initialised Config
+    use bytemuck::Zeroable;
+    let c = Config::zeroed();
+    assert_eq!(c.mode, 0);
+    assert_eq!(c.config_bump, 0);
+}
 
-    #[test]
-    fn test_graduation_threshold() {
-        // Test graduation threshold check
-        let threshold: u64 = 1000 * 1_000_000; // 1000 USDC
-        let accumulated: u64 = 1050 * 1_000_000; // 1050 USDC
-
-        assert!(accumulated >= threshold);
-    }
-
-    #[test]
-    fn test_pda_seeds() {
-        // Verify seed strings
-        assert_eq!(CONFIG_SEED, b"config");
-        assert_eq!(VIRTUAL_POOL_SEED, b"virtual_pool");
-        assert_eq!(USDC_VAULT_SEED, b"usdc_vault");
-        assert_eq!(LITTER_VAULT_SEED, b"litter_vault");
-    }
+#[test]
+fn test_pool_zeroed() {
+    use bytemuck::Zeroable;
+    let p = VirtualPool::zeroed();
+    assert_eq!(p.virtual_usdc, 0);
+    assert_eq!(p.real_usdc, 0);
 }

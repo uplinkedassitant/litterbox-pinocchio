@@ -1,0 +1,28 @@
+# LitterBox v2 Test Runbook for Surfpool
+name: LitterBox v2 Test
+description: Test the LitterBox Pinocchio program locally
+version: 0.1.0
+
+# Configure the local cluster
+cluster:
+  rpc_url: http://localhost:8899
+  ws_url: ws://localhost:8900
+
+# Enable plugins we need
+plugins:
+  - name: token
+    enabled: true
+  - name: memo
+    enabled: true
+
+# Deploy our program
+programs:
+  - name: litterbox_v2
+    program_id: 8LhTE9owPwbdJMHbE7Nwi9i2H66JsPHzjwWbKPgLUa7t
+    binary: target/deploy/litterbox_pinocchio.so
+    deployed: false
+
+# Test accounts to create
+accounts:
+  # Config PDA will be created by the program
+  # VirtualPool PDA will be created by the program

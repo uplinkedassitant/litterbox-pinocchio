@@ -8,6 +8,9 @@ crate-type = ["cdylib", "lib"]
 
 [features]
 default = []
+# Gate the SBF entrypoint/allocator/panic-handler symbols behind this feature
+# so the crate can be used as a library without duplicate-symbol link errors.
+bpf-entrypoint = []
 cpi = []
 
 [dependencies]
