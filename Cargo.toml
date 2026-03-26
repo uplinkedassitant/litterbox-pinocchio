@@ -15,6 +15,7 @@ cpi = []
 
 [dependencies]
 pinocchio = "=0.9.3"
+pinocchio-token = "=0.2.0"
 bytemuck = { version = "1.14", features = ["derive"] }
 
 [profile.release]
