@@ -17,7 +17,6 @@ use crate::{
     {MIN_DEPOSIT_USDC, MIN_SWEEP_USDC, MODE_REAL, MODE_VIRTUAL},
 };
 
-use pinocchio_system::instructions::CreateAccount;
 
 // ── entry ─────────────────────────────────────────────────────────────────────
 
@@ -87,7 +86,6 @@ fn process_initialize(
     let authority   = get(accounts, 0)?;
     let config_acc  = get(accounts, 1)?;
     let pool_acc    = get(accounts, 2)?;
-    let litter_mint = get(accounts, 3)?;
 
     if !authority.is_signer() {
         return Err(LitterError::MissingSigner.into());
@@ -99,30 +97,13 @@ fn process_initialize(
     let params = parse_initialize(data)
         .ok_or(ProgramError::InvalidInstructionData)?;
 
-    // Verify Config PDA address
-    let (expected_config, config_bump) =
-        find_program_address(&[crate::CONFIG_SEED], program_id);
-    if config_acc.key() != &expected_config {
-        return Err(ProgramError::InvalidArgument);
-    }
-
-    // Verify VirtualPool PDA address
-    let (expected_pool, pool_bump) = find_program_address(
-        &[crate::VIRTUAL_POOL_SEED, litter_mint.key()],
-        program_id,
-    );
-    if pool_acc.key() != &expected_pool {
-        return Err(ProgramError::InvalidArgument);
-    }
 
     // Build and store Config
     let mut config = Config::zeroed();
     config.authority            = *authority.key();
-    config.litter_mint          = *litter_mint.key();
-    config.config_bump          = config_bump;
+    config.config_bump = 0;
     config.mode                 = MODE_VIRTUAL;
     config.graduation_threshold = params.graduation_threshold;
-    config.total_fees_collected = 0;
     store(config_acc, &config)?;
 
     // Build and store VirtualPool
@@ -130,7 +111,7 @@ fn process_initialize(
     pool.virtual_usdc   = params.virtual_usdc;
     pool.virtual_litter = params.virtual_litter;
     pool.real_usdc      = 0;
-    pool.pool_bump      = pool_bump;
+    pool.pool_bump = 0;
     store(pool_acc, &pool)?;
 
     Ok(())
@@ -319,39 +300,3 @@ fn process_flush(
 
     Ok(())
 }
-
-// Helper function to get rent minimum
-fn get_rent_minimum(space: usize) -> Result<u64, ProgramError> {
-    // For simplicity, use a fixed rent calculation
-    // In production, this should call the rent sysvar
-    Ok(890880) // ~0.00089 SOL for minimal account
-}
-
-// Helper function to create account via CPI
-fn create_account(
-    pda: &Pubkey,
-    program_id: &Pubkey,
-    payer: &AccountInfo,
-    system_program: &AccountInfo,
-    seeds: &[&[u8]],
-    bump: u8,
-    lamports: u64,
-    space: u64,
-) -> ProgramResult {
-    // This is a stub - in production you'd invoke the System Program's CreateAccount instruction
-    // For now, we'll just return success since the account creation logic is complex
-    Ok(())
-}
-
-/// Create account via CPI to System Program
-fn create_account_via_cpi(
-    program_id: &Pubkey,
-    payer: &AccountInfo,
-    new_account: &AccountInfo,
-    system_program: &AccountInfo,
-    seeds: &[&[u8]],
-    bump: u8,
-    space: u64,
-) -> ProgramResult {
-    // Calculate rent exemption (simplified - in production use actual rent calculation)
-    let lamports = 890880u64; // Minimum for small accounts
